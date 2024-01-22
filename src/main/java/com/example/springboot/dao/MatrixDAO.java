@@ -2,11 +2,11 @@ package com.example.springboot.dao;
 
 import com.example.springboot.model.Matrix;
 
-public class MatrixDAO implements MatrixDAO_I{
+public class MatrixDAO implements MatrixDAO_I {
 
     @Override
     public Double[][] rref(Double[][] arr) {
-        Matrix<Double> mat = new Matrix<Double>(arr);
+        Matrix mat = new Matrix(arr);
         return mat.rref();
     }
 }
