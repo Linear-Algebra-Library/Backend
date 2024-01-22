@@ -1,24 +1,185 @@
 package com.example.springboot.model;
 
-public class Matrix<T> {
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    T [][] mat;
+import java.util.Arrays;
 
-    T [][] rref;
+public class Matrix {
 
-    public Matrix(T[][] arr) {
+    Double [][] mat;
+
+    Double [][] rref;
+
+    /**
+     * The inverse of the given matrix. Exists if and only if mat is an nxn matrix with a non-zero determinant.
+     */
+    Double [][] inverse;
+
+    /**
+     * This value represents the modification of the determinant. In particular, every row operation modifies this value dependent upon the row operation.
+     *
+     * a) If B is a matrix obtained by interchanging two rows of A, then det(B) = - det(A)
+     * b) If B is a matrix obtained by multiplying each entry of some row of A by a scalar k, then det (B) = k * det(A)
+     * c) If B is a matrix obtained by adding a multiple of some row of A to a different row, then det(B) = det(A)
+     *
+     * Thus, by following these rules, we can obtain the det(A) from the det(B).
+     *
+     * Suppose that the rref(A) = B. Then we can obtain det(A) by following the above rules and applying them (inversely) to the det(B).
+     *
+     * The det(B), where B is in rref, is easy to compute, as RREF guarantees that the matrix is in an upper triangular matrix, and thus the determinant is merely the multiplication along the diagonals.
+     *
+     * For more information, refer to Linear Algebra theorems, in particular, theorems surrounding determinants. The above are critical theormes for the development of linear algebra algorithms.
+     */
+    double k;
+
+    public Matrix(@JsonProperty("matrix") Double[][] arr) {
+        System.out.println("Made a new matrix!");
         this.mat = arr;
+        print(this.mat);
+        this.rref = new Double[arr.length][arr[0].length];
+        this.inverse = new Double[arr.length][arr[0].length];
+        init();
         rref_();
+        print(this.rref);
+        System.out.println("Determinant is " + determinant());
+    }
+
+    /**
+     * This method performs the following initalizations :
+     *
+     * a) Initalizations the inverse matrix to be the identity matrix.
+     *     -> The inverse is obtained by perform the inverse elementary row operations which transform a given matrix A to its rref B
+     *     -> Therefore, we can obtain an inverse in the same process as obtaining a rref.
+     *
+     * b) Initalization of the rref matrix to be the given matrix.
+     */
+    private void init() {
+        for(int i = 0; i<rref.length; i++) {
+            for(int j = 0; j<rref[i].length; j++) {
+                rref[i][j] = mat[i][j];
+            }
+            inverse[i][i] = 1.0;
+        }
     }
 
     /**
      * A method which calculates the Reduced Row Echelon Form of the private property /mat/ and populates /rref/ with that data.
+     *
+     * Note that many properties of matrices can be obtained through following the RREF.
+     *
+     * a) By tracking elementary row operations, one can deduce the changes done to the determinant in each step.
+     *
+     * b) By appling the exact same elementary row operations to an identity matrix, one will obtain the inverse (or the "closest" inverse if a true inverse does not exist).
+     *
      */
     private void rref_() {
+        System.out.println("Calculating the RREF");
+        int i = 0;
+        int j = 0;
 
+        while(i < rref.length && j < rref[i].length) {
+            //find a non-zero element in the current row
+            int row = nonzero(i, j);
+            if(row != -1 && row != i) {
+                swap_row(row, i);
+                this.k = -this.k; //keep track of determinant changes
+            }
+            if(rref[i][j] != 0) {
+                //there is a pivot at rref[i][j]
+                scale_row(i, 1/rref[i][j]); //ensure that rref[i][j] is a 1 -- i.e., a pivot
+                this.k = this.k / rref[i][j]; //keep track of determinant changes
+
+                //we need to "kill" / reduce all elements in the current column other than rref[i][j] to be zero.
+                for(int r = 0; r < rref.length; r ++) {
+                    if(r != i && rref[r][j] != 0) {
+                        double scalar = -rref[r][j];
+                        add_rows(i,r, scalar);
+                    }
+                }
+
+                i++;
+                j++;
+            }
+            else {
+                //col j is all zero or contains a free variable; the next pivot will be in the next col in the current row
+                j++;
+            }
+        }
     }
 
-    public T[][] rref() {
+    /**
+     * Finds the first row that is beneath the given row which contains a non-zero element in the given column.
+     *
+     * If no such row exists, this method returns -1.
+     *
+     * @param row
+     * @param col
+     * @return
+     */
+    private int nonzero(int row, int col) {
+        while(row < rref.length) {
+            if(rref[row][col] != 0) {
+                return row;
+            }
+            row++;
+        }
+        return -1;
+    }
+
+    private void scale_row(int row, double scalar) {
+        System.out.println("Scaling the following array by a factor of " + scalar);
+        System.out.println(Arrays.asList(rref[row]));
+        for(int col = 0; col < rref[row].length; col ++ ) {
+            rref[row][col] = scalar * rref[row][col];
+        }
+    }
+    private void swap_row(int row1, int row2) {
+        System.out.println("Swapping the following two rows");
+        System.out.println(Arrays.asList(rref[row1]));
+        System.out.println(Arrays.asList(rref[row2]));
+
+        for(int i = 0; i<rref[row1].length; i++) {
+            Double temp = rref[row1][i];
+            rref[row1][i] = rref[row2][i];
+            rref[row2][i] = temp;
+        }
+    }
+
+    /**
+     * Adds each entry in row1, scaled by a factor of scalar, to each entry of row2
+     *
+     * In other words, after this operation, mat[row2][index] = mat[row1][index] * scalar + mat[row2][index]
+     * @param row1
+     * @param row2
+     */
+    private void add_rows(int row1, int row2, double scalar) {
+        System.out.println("Adding the first row to the second row, scaled by a factor of " + scalar);
+        System.out.println(Arrays.asList(rref[row1]));
+        System.out.println(Arrays.asList(rref[row2]));
+        for(int col = 0; col < rref[row1].length; col ++ ) {
+            rref[row2][col] = (rref[row1][col] * scalar) + rref[row2][col];
+        }
+    }
+
+    private void print(Double[][] arr) {
+        for(int i = 0; i<arr.length; i++) {
+            for(int j = 0; j<arr[i].length; j++) {
+                System.out.print(arr[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    public Double [][] rref() {
         return this.rref;
+    }
+
+    public Double determinant() {
+        double det = 1;
+        for(int i = 0; i < rref.length; i++) {
+            det *= rref[i][i];
+        }
+        det *= k;
+        return det;
     }
 }
