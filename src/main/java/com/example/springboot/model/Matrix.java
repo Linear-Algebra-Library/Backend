@@ -42,6 +42,8 @@ public class Matrix {
         rref_();
         print(this.rref);
         System.out.println("Determinant is " + determinant());
+        System.out.println("The inverse is as follows");
+        print(this.inverse);
     }
 
     /**
@@ -54,9 +56,11 @@ public class Matrix {
      * b) Initalization of the rref matrix to be the given matrix.
      */
     private void init() {
+        this.k = 1;
         for(int i = 0; i<rref.length; i++) {
             for(int j = 0; j<rref[i].length; j++) {
                 rref[i][j] = mat[i][j];
+                inverse[i][j] = 0.0;
             }
             inverse[i][i] = 1.0;
         }
@@ -79,21 +83,24 @@ public class Matrix {
 
         while(i < rref.length && j < rref[i].length) {
             //find a non-zero element in the current row
-            int row = nonzero(i, j);
+            int row = nonzero(this.rref, i, j);
             if(row != -1 && row != i) {
-                swap_row(row, i);
+                swap_row(this.rref, row, i);
+                swap_row(this.inverse, row, i); //apply same changes to identity matrix to obtain inverse
                 this.k = -this.k; //keep track of determinant changes
             }
             if(rref[i][j] != 0) {
                 //there is a pivot at rref[i][j]
-                scale_row(i, 1/rref[i][j]); //ensure that rref[i][j] is a 1 -- i.e., a pivot
+                scale_row(this.rref, i, 1/rref[i][j]); //ensure that rref[i][j] is a 1 -- i.e., a pivot
+                scale_row(this.inverse, i, 1/rref[i][j]); //apply same changes to identity matrix to obtain inverse
                 this.k = this.k / rref[i][j]; //keep track of determinant changes
 
                 //we need to "kill" / reduce all elements in the current column other than rref[i][j] to be zero.
                 for(int r = 0; r < rref.length; r ++) {
                     if(r != i && rref[r][j] != 0) {
                         double scalar = -rref[r][j];
-                        add_rows(i,r, scalar);
+                        add_rows(this.rref, i,r, scalar);
+                        add_rows(this.inverse, i, r, scalar); //apply same changes to identity matrix to obtain inverse
                     }
                 }
 
@@ -116,9 +123,9 @@ public class Matrix {
      * @param col
      * @return
      */
-    private int nonzero(int row, int col) {
-        while(row < rref.length) {
-            if(rref[row][col] != 0) {
+    private int nonzero(Double[][] mat, int row, int col) {
+        while(row < mat.length) {
+            if(mat[row][col] != 0) {
                 return row;
             }
             row++;
@@ -126,22 +133,22 @@ public class Matrix {
         return -1;
     }
 
-    private void scale_row(int row, double scalar) {
+    private void scale_row(Double[][] mat, int row, double scalar) {
         System.out.println("Scaling the following array by a factor of " + scalar);
-        System.out.println(Arrays.asList(rref[row]));
-        for(int col = 0; col < rref[row].length; col ++ ) {
-            rref[row][col] = scalar * rref[row][col];
+        System.out.println(Arrays.asList(mat[row]));
+        for(int col = 0; col < mat[row].length; col ++ ) {
+            mat[row][col] = scalar * mat[row][col];
         }
     }
-    private void swap_row(int row1, int row2) {
+    private void swap_row(Double[][] mat, int row1, int row2) {
         System.out.println("Swapping the following two rows");
-        System.out.println(Arrays.asList(rref[row1]));
-        System.out.println(Arrays.asList(rref[row2]));
+        System.out.println(Arrays.asList(mat[row1]));
+        System.out.println(Arrays.asList(mat[row2]));
 
-        for(int i = 0; i<rref[row1].length; i++) {
-            Double temp = rref[row1][i];
-            rref[row1][i] = rref[row2][i];
-            rref[row2][i] = temp;
+        for(int i = 0; i<mat[row1].length; i++) {
+            Double temp = mat[row1][i];
+            mat[row1][i] = mat[row2][i];
+            mat[row2][i] = temp;
         }
     }
 
@@ -152,12 +159,12 @@ public class Matrix {
      * @param row1
      * @param row2
      */
-    private void add_rows(int row1, int row2, double scalar) {
+    private void add_rows(Double[][] mat, int row1, int row2, double scalar) {
         System.out.println("Adding the first row to the second row, scaled by a factor of " + scalar);
-        System.out.println(Arrays.asList(rref[row1]));
-        System.out.println(Arrays.asList(rref[row2]));
-        for(int col = 0; col < rref[row1].length; col ++ ) {
-            rref[row2][col] = (rref[row1][col] * scalar) + rref[row2][col];
+        System.out.println(Arrays.asList(mat[row1]));
+        System.out.println(Arrays.asList(mat[row2]));
+        for(int col = 0; col < mat[row1].length; col ++ ) {
+            mat[row2][col] = (mat[row1][col] * scalar) + mat[row2][col];
         }
     }
 
@@ -175,11 +182,22 @@ public class Matrix {
     }
 
     public Double determinant() {
+        System.out.println("Calculating the determinant...");
+        System.out.println("k is " + k);
         double det = 1;
         for(int i = 0; i < rref.length; i++) {
             det *= rref[i][i];
         }
         det *= k;
         return det;
+    }
+
+    public Double[][] inverse() {
+        if(determinant() != 0) {
+            return inverse;
+        }
+        else {
+            return null; //inverse does not exist, determinat is 0
+        }
     }
 }
