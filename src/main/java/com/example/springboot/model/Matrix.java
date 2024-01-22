@@ -6,6 +6,8 @@ import java.util.Arrays;
 
 public class Matrix {
 
+    static final boolean TESTING = false;
+
     Double [][] mat;
 
     Double [][] rref;
@@ -14,6 +16,11 @@ public class Matrix {
      * The inverse of the given matrix. Exists if and only if mat is an nxn matrix with a non-zero determinant.
      */
     Double [][] inverse;
+
+    long time;
+
+    long start;
+    long end;
 
     /**
      * This value represents the modification of the determinant. In particular, every row operation modifies this value dependent upon the row operation.
@@ -32,18 +39,25 @@ public class Matrix {
      */
     double k;
 
+    double determinant;
+
     public Matrix(@JsonProperty("matrix") Double[][] arr) {
-        System.out.println("Made a new matrix!");
+        if(TESTING) {
+            System.out.println("Made a new matrix!");
+        }
         this.mat = arr;
         print(this.mat);
         this.rref = new Double[arr.length][arr[0].length];
         this.inverse = new Double[arr.length][arr[0].length];
         init();
+        this.start = System.currentTimeMillis();
         rref_();
+        this.end = System.currentTimeMillis();
         print(this.rref);
-        System.out.println("Determinant is " + determinant());
+        System.out.println("Determinant is " + this.determinant);
         System.out.println("The inverse is as follows");
         print(this.inverse);
+        System.out.println("Computational time : " + (this.end - this.start) + " ms");
     }
 
     /**
@@ -73,11 +87,15 @@ public class Matrix {
      *
      * a) By tracking elementary row operations, one can deduce the changes done to the determinant in each step.
      *
-     * b) By appling the exact same elementary row operations to an identity matrix, one will obtain the inverse (or the "closest" inverse if a true inverse does not exist).
+     * b) By applying the exact same elementary row operations to an identity matrix, one will obtain the inverse (or the "closest" inverse if a true inverse does not exist).
+     *
+     * RREF runs in O(n^3) runtime. We can see that here -- the outer while loop is n^2 as it iterates over two dimensions. Meanwhile, inside the outer loop there is an O(n) task that iterates over every row of a particular column. Therefore, we have O(n^3) runtime, which is the best possible runtime for a RREF algorithm in classical terms (There indeed exists an O(n^log2(7)) runtime, which is better than O(n^log2(8)) == O(n^3) )
      *
      */
     private void rref_() {
-        System.out.println("Calculating the RREF");
+        if(TESTING) {
+            System.out.println("Calculating the RREF");
+        }
         int i = 0;
         int j = 0;
 
@@ -112,6 +130,7 @@ public class Matrix {
                 j++;
             }
         }
+        determinant();
     }
 
     /**
@@ -134,16 +153,20 @@ public class Matrix {
     }
 
     private void scale_row(Double[][] mat, int row, double scalar) {
-        System.out.println("Scaling the following array by a factor of " + scalar);
-        System.out.println(Arrays.asList(mat[row]));
+        if(TESTING) {
+            System.out.println("Scaling the following array by a factor of " + scalar);
+            System.out.println(Arrays.asList(mat[row]));
+        }
         for(int col = 0; col < mat[row].length; col ++ ) {
             mat[row][col] = scalar * mat[row][col];
         }
     }
     private void swap_row(Double[][] mat, int row1, int row2) {
-        System.out.println("Swapping the following two rows");
-        System.out.println(Arrays.asList(mat[row1]));
-        System.out.println(Arrays.asList(mat[row2]));
+        if(TESTING) {
+            System.out.println("Swapping the following two rows");
+            System.out.println(Arrays.asList(mat[row1]));
+            System.out.println(Arrays.asList(mat[row2]));
+        }
 
         for(int i = 0; i<mat[row1].length; i++) {
             Double temp = mat[row1][i];
@@ -160,9 +183,11 @@ public class Matrix {
      * @param row2
      */
     private void add_rows(Double[][] mat, int row1, int row2, double scalar) {
-        System.out.println("Adding the first row to the second row, scaled by a factor of " + scalar);
-        System.out.println(Arrays.asList(mat[row1]));
-        System.out.println(Arrays.asList(mat[row2]));
+        if(TESTING) {
+            System.out.println("Adding the first row to the second row, scaled by a factor of " + scalar);
+            System.out.println(Arrays.asList(mat[row1]));
+            System.out.println(Arrays.asList(mat[row2]));
+        }
         for(int col = 0; col < mat[row1].length; col ++ ) {
             mat[row2][col] = (mat[row1][col] * scalar) + mat[row2][col];
         }
@@ -177,23 +202,40 @@ public class Matrix {
         }
     }
 
+    /**
+     *
+     * @return the Reduced Row Ecehlon Form of the inital matrix.
+     */
     public Double [][] rref() {
         return this.rref;
     }
 
-    public Double determinant() {
-        System.out.println("Calculating the determinant...");
-        System.out.println("k is " + k);
+    /**
+     * Calculates the determinant of this matrix.
+     */
+    private void determinant() {
+        if(TESTING) {
+            System.out.println("Calculating the determinant...");
+            System.out.println("k is " + k);
+        }
         double det = 1;
         for(int i = 0; i < rref.length; i++) {
             det *= rref[i][i];
         }
         det *= k;
-        return det;
+        this.determinant = det;
+    }
+
+    /**
+     * Returns the determinant of this matrix.
+     * @return
+     */
+    public Double det() {
+        return this.determinant;
     }
 
     public Double[][] inverse() {
-        if(determinant() != 0) {
+        if(determinant != 0) {
             return inverse;
         }
         else {
