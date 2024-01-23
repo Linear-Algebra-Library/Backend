@@ -53,10 +53,13 @@ public class Matrix {
         this.start = System.currentTimeMillis();
         rref_();
         this.end = System.currentTimeMillis();
-        print(this.rref);
-        System.out.println("Determinant is " + this.determinant);
-        System.out.println("The inverse is as follows");
-        print(this.inverse);
+        if(TESTING) {
+            System.out.println("The RREF is as follows");
+            print(this.rref);
+            System.out.println("Determinant is " + this.determinant);
+            System.out.println("The inverse is as follows");
+            print(this.inverse);
+        }
         System.out.println("Computational time : " + (this.end - this.start) + " ms");
     }
 
